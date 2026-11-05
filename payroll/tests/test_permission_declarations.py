@@ -19,10 +19,9 @@ What is locked down:
     to everybody.
 """
 
-import json
-import os
-
 from django.test import TestCase
+
+from core.utils import build_permissions_map
 
 from payroll.apps import (
     DJANGO_PERMS,
@@ -85,21 +84,6 @@ INTENTIONALLY_SHARED = {
     ("payroll", "reject"): ("payroll", "delete"),
     ("payroll", "makePayment"): ("payroll", "create"),
 }
-
-
-def _load_permissions_map():
-    """`permissions_map.json` lives in the assembly, not in the package."""
-    from django.conf import settings
-
-    candidates = [
-        os.path.join(str(settings.BASE_DIR), "permissions_map.json"),
-        os.path.join(os.path.dirname(str(settings.BASE_DIR)), "permissions_map.json"),
-    ]
-    for path in candidates:
-        if os.path.exists(path):
-            with open(path) as handle:
-                return json.load(handle)
-    return None
 
 
 class PayrollPermissionDeclarationTestCase(TestCase):
@@ -262,9 +246,7 @@ class PayrollPermissionDeclarationTestCase(TestCase):
 
     def test_ids_match_permissions_map(self):
         """The assembly's rights map must carry the same integers."""
-        mapping = _load_permissions_map()
-        if mapping is None:
-            self.skipTest("permissions_map.json not found in this assembly")
+        mapping = build_permissions_map()
         for key, right_id in EXPECTED_MAP_ENTRIES.items():
             with self.subTest(key=key):
                 self.assertEqual(str(mapping.get(key)), right_id)
